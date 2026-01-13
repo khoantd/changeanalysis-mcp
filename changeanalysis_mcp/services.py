@@ -17,18 +17,40 @@ class ChangeRequestsService:
         """
         self.client = client
     
-    async def list_change_requests(self, search: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def list_change_requests(
+        self,
+        status: Optional[str] = None,
+        priority: Optional[str] = None,
+        department: Optional[str] = None,
+        assignee_id: Optional[str] = None,
+        search: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """
-        List change requests, optionally filtered by search term.
+        List change requests with optional filtering and search.
         
         Args:
-            search: Optional search term to filter change requests
+            status: Filter by status
+            priority: Filter by priority
+            department: Filter by department
+            assignee_id: Filter by assignee ID
+            search: Search by key, title, or description
             
         Returns:
             List of change request dictionaries
         """
-        params = {"search": search} if search else None
-        data = await self.client.get("/change-requests", params=params)
+        params = {}
+        if status:
+            params["status"] = status
+        if priority:
+            params["priority"] = priority
+        if department:
+            params["department"] = department
+        if assignee_id:
+            params["assignee_id"] = assignee_id
+        if search:
+            params["search"] = search
+        
+        data = await self.client.get("/change-requests", params=params if params else None)
         
         # Ensure we return a list
         if isinstance(data, list):
@@ -49,6 +71,91 @@ class ChangeRequestsService:
             Change request dictionary
         """
         return await self.client.get(f"/change-requests/{change_id}")
+    
+    async def create_change_request(self, change_request_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a new change request.
+        
+        Args:
+            change_request_data: Dictionary containing change request data
+            
+        Returns:
+            Created change request dictionary
+        """
+        return await self.client.post("/change-requests", json=change_request_data)
+    
+    async def update_change_request(
+        self,
+        change_id: str,
+        update_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Update a change request.
+        
+        Args:
+            change_id: The ID of the change request
+            update_data: Dictionary containing fields to update
+            
+        Returns:
+            Updated change request dictionary
+        """
+        return await self.client.patch(f"/change-requests/{change_id}", json=update_data)
+    
+    async def delete_change_request(self, change_id: str) -> Dict[str, Any]:
+        """
+        Delete a change request.
+        
+        Args:
+            change_id: The ID of the change request
+            
+        Returns:
+            Empty dictionary (204 No Content response)
+        """
+        return await self.client.delete(f"/change-requests/{change_id}")
+    
+    async def add_comment(
+        self,
+        change_id: str,
+        comment_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Add a comment to a change request.
+        
+        Args:
+            change_id: The ID of the change request
+            comment_data: Dictionary containing comment data
+            
+        Returns:
+            Created comment dictionary
+        """
+        return await self.client.post(
+            f"/change-requests/{change_id}/comments",
+            json=comment_data
+        )
+    
+    async def approve_change_request(self, change_id: str) -> Dict[str, Any]:
+        """
+        Approve a change request.
+        
+        Args:
+            change_id: The ID of the change request
+            
+        Returns:
+            Updated change request dictionary
+        """
+        return await self.client.post(f"/change-requests/{change_id}/approve")
+    
+    async def reject_change_request(self, change_id: str) -> Dict[str, Any]:
+        """
+        Reject a change request.
+        
+        Args:
+            change_id: The ID of the change request
+            
+        Returns:
+            Updated change request dictionary
+        """
+        return await self.client.post(f"/change-requests/{change_id}/reject")
 
 
 class APIServiceFactory:

@@ -28,6 +28,37 @@ class BaseAPIClient:
         if self._client:
             await self._client.aclose()
     
+    def _get_headers(self, headers: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+        """
+        Get request headers with API key if configured.
+        
+        Args:
+            headers: Optional additional headers
+            
+        Returns:
+            Dictionary of headers to use
+        """
+        import logging
+        logger = logging.getLogger("changeanalysis_mcp.client")
+        
+        request_headers = headers.copy() if headers else {}
+        if self.config.api_key:
+            auth_method = self.config.auth_method.lower() if self.config.auth_method else None
+            if auth_method == "bearer":
+                request_headers["Authorization"] = f"Bearer {self.config.api_key}"
+                logger.debug("Added Authorization header (Bearer)")
+            elif auth_method in ("x-api-key", "x_api_key"):
+                request_headers["X-API-Key"] = self.config.api_key
+                logger.debug("Added X-API-Key header")
+            else:
+                logger.warning(f"Unknown auth_method: {auth_method}, no auth header added")
+        else:
+            logger.warning(
+                "No API key configured. Set CHANGE_ANALYSIS_API_KEY environment variable. "
+                "Requests will be made without authentication."
+            )
+        return request_headers
+    
     async def get(
         self,
         endpoint: str,
@@ -53,7 +84,8 @@ class BaseAPIClient:
             raise RuntimeError("Client must be used as async context manager")
         
         url = f"{self.config.base_url}{endpoint}"
-        response = await self._client.get(url, params=params, headers=headers)
+        request_headers = self._get_headers(headers)
+        response = await self._client.get(url, params=params, headers=request_headers)
         response.raise_for_status()
         return response.json()
     
@@ -82,7 +114,8 @@ class BaseAPIClient:
             raise RuntimeError("Client must be used as async context manager")
         
         url = f"{self.config.base_url}{endpoint}"
-        response = await self._client.post(url, json=json, headers=headers)
+        request_headers = self._get_headers(headers)
+        response = await self._client.post(url, json=json, headers=request_headers)
         response.raise_for_status()
         return response.json()
     
@@ -111,7 +144,38 @@ class BaseAPIClient:
             raise RuntimeError("Client must be used as async context manager")
         
         url = f"{self.config.base_url}{endpoint}"
-        response = await self._client.put(url, json=json, headers=headers)
+        request_headers = self._get_headers(headers)
+        response = await self._client.put(url, json=json, headers=request_headers)
+        response.raise_for_status()
+        return response.json()
+    
+    async def patch(
+        self,
+        endpoint: str,
+        json: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Make a PATCH request.
+        
+        Args:
+            endpoint: API endpoint path
+            json: JSON payload
+            headers: Request headers
+            
+        Returns:
+            JSON response data
+            
+        Raises:
+            httpx.HTTPStatusError: If the request fails
+            httpx.RequestError: If there's a network error
+        """
+        if not self._client:
+            raise RuntimeError("Client must be used as async context manager")
+        
+        url = f"{self.config.base_url}{endpoint}"
+        request_headers = self._get_headers(headers)
+        response = await self._client.patch(url, json=json, headers=request_headers)
         response.raise_for_status()
         return response.json()
     
@@ -128,7 +192,7 @@ class BaseAPIClient:
             headers: Request headers
             
         Returns:
-            JSON response data
+            JSON response data (may be empty for 204 responses)
             
         Raises:
             httpx.HTTPStatusError: If the request fails
@@ -138,6 +202,10 @@ class BaseAPIClient:
             raise RuntimeError("Client must be used as async context manager")
         
         url = f"{self.config.base_url}{endpoint}"
-        response = await self._client.delete(url, headers=headers)
+        request_headers = self._get_headers(headers)
+        response = await self._client.delete(url, headers=request_headers)
         response.raise_for_status()
+        # Handle 204 No Content responses
+        if response.status_code == 204:
+            return {}
         return response.json()

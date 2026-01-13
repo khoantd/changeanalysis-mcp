@@ -5,13 +5,30 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "changeanalysis-mcp"
 version = "0.1.0"
-description = "FastMCP project"
+description = "MCP server for change analysis and change request management"
 readme = "README.md"
 requires-python = ">=3.8"
+authors = [
+    {name = "Change Analysis MCP Team"}
+]
+keywords = ["mcp", "model-context-protocol", "change-analysis", "change-requests"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 dependencies = [
     "fastmcp",
     "httpx",
 ]
+
+[project.scripts]
+changeanalysis-mcp = "server:mcp.run"
 
 [project.optional-dependencies]
 dev = [

@@ -1,0 +1,210 @@
+# Change Analysis MCP - Cursor Rules
+
+## Project Overview
+
+This is a FastMCP (Model Context Protocol) server project for change analysis. It provides MCP tools that interact with external APIs to search and analyze change requests.
+
+## Architecture
+
+The project follows a layered architecture:
+
+1. **Config Layer** (`changeanalysis_mcp/config.py`): API configuration using dataclasses
+2. **Client Layer** (`changeanalysis_mcp/client.py`): Base HTTP client using httpx for async requests
+3. **Service Layer** (`changeanalysis_mcp/services.py`): Domain-specific service classes (e.g., ChangeRequestsService)
+4. **Server Layer** (`server.py`): FastMCP tools that expose functionality to MCP clients
+
+## Code Style & Standards
+
+### Python Version
+- Target Python 3.8+ (as specified in pyproject.toml)
+- Use type hints throughout
+- Prefer async/await for I/O operations
+
+### Formatting
+- Line length: 100 characters (configured in black and ruff)
+- Use `black` for code formatting
+- Use `ruff` for linting
+- Follow PEP 8 conventions
+
+### Type Hints
+- Always use type hints for function parameters and return types
+- Use `Optional[T]` for nullable types
+- Use `Dict[str, Any]` for JSON-like dictionaries
+- Use `List[T]` for lists
+
+### Async Patterns
+- Use async context managers (`__aenter__`, `__aexit__`) for resource management
+- Always use `async with` when working with API clients
+- Handle async exceptions properly
+
+### Error Handling
+- Catch specific exceptions (`httpx.HTTPStatusError`, `httpx.RequestError`)
+- Provide meaningful error messages
+- Never silently swallow exceptions
+- Return user-friendly error strings from MCP tools
+
+## Project Structure Patterns
+
+### Adding New APIs
+
+When adding new API endpoints, follow this pattern:
+
+1. **Create a Service Class** in `services.py`:
+   - Inherit from base pattern (like `ChangeRequestsService`)
+   - Use `BaseAPIClient` for HTTP requests
+   - Implement async methods that return typed data structures
+
+2. **Add Service Property** to `APIServiceFactory`:
+   - Add a `@property` method that returns the service instance
+   - Check that factory is used as async context manager
+
+3. **Export the Service** in `__init__.py`:
+   - Add to `__all__` list
+   - Import in `__init__.py`
+
+4. **Create MCP Tools** in `server.py`:
+   - Use `@mcp.tool()` decorator
+   - Use async context manager pattern with `APIServiceFactory`
+   - Handle errors gracefully
+   - Return string responses (MCP tools return strings)
+
+### Service Class Pattern
+
+```python
+class NewService:
+    """Service for interacting with new-api endpoint."""
+    
+    def __init__(self, client: BaseAPIClient):
+        self.client = client
+    
+    async def list_items(self, search: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List items with optional search filter."""
+        params = {"search": search} if search else None
+        data = await self.client.get("/endpoint", params=params)
+        # Handle response format variations
+        if isinstance(data, list):
+            return data
+        elif isinstance(data, dict) and "items" in data:
+            return data["items"]
+        else:
+            return [data]
+```
+
+### MCP Tool Pattern
+
+```python
+@mcp.tool()
+async def tool_name(param: str) -> str:
+    """Tool description for MCP."""
+    try:
+        async with APIServiceFactory() as api_factory:
+            result = await api_factory.service.method(param)
+            return f"Result: {result}"
+    except httpx.HTTPStatusError as e:
+        return f"HTTP error: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        return f"Request error: {str(e)}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+```
+
+## Configuration
+
+- Default API base URL: `http://72.60.233.159:8092`
+- Default timeout: 30.0 seconds
+- Configuration is centralized in `config.py` using `APIConfig` dataclass
+- Use `DEFAULT_CONFIG` for default settings
+- Allow custom configs to be passed to services
+
+## Dependencies
+
+### Core Dependencies
+- `fastmcp`: MCP server framework
+- `httpx`: Async HTTP client
+
+### Development Dependencies
+- `pytest>=7.0`: Testing framework
+- `black>=23.0`: Code formatter
+- `ruff>=0.1.0`: Linter
+
+## Best Practices
+
+### Client Usage
+- Always use `BaseAPIClient` as an async context manager
+- Never instantiate clients directly in tools - use `APIServiceFactory`
+- Ensure proper cleanup of HTTP connections
+
+### Response Handling
+- Handle different response formats (list, dict with "items", single object)
+- Always validate response structure before accessing nested data
+- Return consistent data types from service methods
+
+### Testing Considerations
+- Services should be easily mockable
+- Use dependency injection pattern (services receive client, not create it)
+- Test error handling paths
+
+### Documentation
+- Use docstrings for all public classes and methods
+- Follow Google-style docstrings
+- Document parameters, return types, and exceptions
+
+## File-Specific Guidelines
+
+### `server.py`
+- Keep tool functions focused and simple
+- Tools should delegate to services, not contain business logic
+- Always handle exceptions and return user-friendly messages
+
+### `client.py`
+- Keep HTTP client generic and reusable
+- Support all HTTP methods (GET, POST, PUT, DELETE)
+- Raise appropriate exceptions for HTTP errors
+
+### `services.py`
+- One service class per API domain
+- Services handle API-specific logic and response parsing
+- Factory pattern manages service lifecycle
+
+### `config.py`
+- Use dataclasses for configuration
+- Provide sensible defaults
+- Make configuration easily overridable
+
+## Important Notes
+
+- **Never modify working pieces unnecessarily** - enhance carefully
+- **Fix things carefully** - test changes before committing
+- MCP tools must return strings (not complex objects)
+- Always use async context managers for resource cleanup
+- Follow the established patterns when extending functionality
+
+## Common Patterns
+
+### Async Context Manager Usage
+```python
+async with APIServiceFactory() as api_factory:
+    result = await api_factory.change_requests.list_change_requests()
+```
+
+### Error Handling in Tools
+```python
+try:
+    # operation
+except httpx.HTTPStatusError as e:
+    return f"HTTP error: {e.response.status_code}"
+except httpx.RequestError as e:
+    return f"Request error: {str(e)}"
+except Exception as e:
+    return f"Error: {str(e)}"
+```
+
+### Response Format Handling
+```python
+if isinstance(data, list):
+    return data
+elif isinstance(data, dict) and "items" in data:
+    return data["items"]
+else:
+    return [data]
+```
