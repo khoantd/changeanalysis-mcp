@@ -191,7 +191,7 @@ class SystemsService:
         if status:
             params["status"] = status
         
-        data = await self.client.get("/systems", params=params if params else None)
+        data = await self.client.get("/get-systems", params=params if params else None)
         
         # Ensure we return a list
         if isinstance(data, list):
