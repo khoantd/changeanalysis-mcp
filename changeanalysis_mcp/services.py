@@ -296,7 +296,7 @@ class FeedbacksService:
         if project_id:
             params["project_id"] = project_id
         
-        data = await self.client.get("/feedbacks", params=params if params else None)
+        data = await self.client.get("/get-feedback", params=params if params else None)
         
         # Ensure we return a list
         if isinstance(data, list):
@@ -316,7 +316,7 @@ class FeedbacksService:
         Returns:
             Feedback dictionary
         """
-        return await self.client.get(f"/feedbacks/{feedback_id}")
+        return await self.client.get(f"/get-feedback/{feedback_id}")
     
     async def create_feedback(self, feedback_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -328,7 +328,7 @@ class FeedbacksService:
         Returns:
             Created feedback dictionary
         """
-        return await self.client.post("/feedbacks", json=feedback_data)
+        return await self.client.post("/get-feedback", json=feedback_data)
     
     async def update_feedback(
         self,
@@ -345,7 +345,7 @@ class FeedbacksService:
         Returns:
             Updated feedback dictionary
         """
-        return await self.client.patch(f"/feedbacks/{feedback_id}", json=update_data)
+        return await self.client.patch(f"/get-feedback/{feedback_id}", json=update_data)
     
     async def delete_feedback(self, feedback_id: str) -> Dict[str, Any]:
         """
@@ -357,7 +357,7 @@ class FeedbacksService:
         Returns:
             Empty dictionary (204 No Content response)
         """
-        return await self.client.delete(f"/feedbacks/{feedback_id}")
+        return await self.client.delete(f"/get-feedback/{feedback_id}")
 
 
 class ProjectsService:
