@@ -397,7 +397,7 @@ class ProjectsService:
         if system_id:
             params["system_id"] = system_id
         
-        data = await self.client.get("/projects", params=params if params else None)
+        data = await self.client.get("/get-projects", params=params if params else None)
         
         # Ensure we return a list
         if isinstance(data, list):
@@ -417,7 +417,7 @@ class ProjectsService:
         Returns:
             Project dictionary
         """
-        return await self.client.get(f"/projects/{project_id}")
+        return await self.client.get(f"/get-projects/{project_id}")
     
     async def create_project(self, project_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -429,7 +429,7 @@ class ProjectsService:
         Returns:
             Created project dictionary
         """
-        return await self.client.post("/projects", json=project_data)
+        return await self.client.post("/get-projects", json=project_data)
     
     async def update_project(
         self,
@@ -446,7 +446,7 @@ class ProjectsService:
         Returns:
             Updated project dictionary
         """
-        return await self.client.patch(f"/projects/{project_id}", json=update_data)
+        return await self.client.patch(f"/get-projects/{project_id}", json=update_data)
     
     async def delete_project(self, project_id: str) -> Dict[str, Any]:
         """
@@ -458,7 +458,7 @@ class ProjectsService:
         Returns:
             Empty dictionary (204 No Content response)
         """
-        return await self.client.delete(f"/projects/{project_id}")
+        return await self.client.delete(f"/get-projects/{project_id}")
 
 
 class APIServiceFactory:
