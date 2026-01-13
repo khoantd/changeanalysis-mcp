@@ -158,6 +158,309 @@ class ChangeRequestsService:
         return await self.client.post(f"/change-requests/{change_id}/reject")
 
 
+class SystemsService:
+    """Service for interacting with systems API."""
+    
+    def __init__(self, client: BaseAPIClient):
+        """
+        Initialize the service.
+        
+        Args:
+            client: Base API client instance
+        """
+        self.client = client
+    
+    async def list_systems(
+        self,
+        search: Optional[str] = None,
+        status: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        List systems with optional filtering and search.
+        
+        Args:
+            search: Search by name or description
+            status: Filter by status
+            
+        Returns:
+            List of system dictionaries
+        """
+        params = {}
+        if search:
+            params["search"] = search
+        if status:
+            params["status"] = status
+        
+        data = await self.client.get("/systems", params=params if params else None)
+        
+        # Ensure we return a list
+        if isinstance(data, list):
+            return data
+        elif isinstance(data, dict) and "items" in data:
+            return data["items"]
+        else:
+            return [data]
+    
+    async def get_system(self, system_id: str) -> Dict[str, Any]:
+        """
+        Get a specific system by ID.
+        
+        Args:
+            system_id: The ID of the system
+            
+        Returns:
+            System dictionary
+        """
+        return await self.client.get(f"/systems/{system_id}")
+    
+    async def create_system(self, system_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a new system.
+        
+        Args:
+            system_data: Dictionary containing system data
+            
+        Returns:
+            Created system dictionary
+        """
+        return await self.client.post("/systems", json=system_data)
+    
+    async def update_system(
+        self,
+        system_id: str,
+        update_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Update a system.
+        
+        Args:
+            system_id: The ID of the system
+            update_data: Dictionary containing fields to update
+            
+        Returns:
+            Updated system dictionary
+        """
+        return await self.client.patch(f"/systems/{system_id}", json=update_data)
+    
+    async def delete_system(self, system_id: str) -> Dict[str, Any]:
+        """
+        Delete a system.
+        
+        Args:
+            system_id: The ID of the system
+            
+        Returns:
+            Empty dictionary (204 No Content response)
+        """
+        return await self.client.delete(f"/systems/{system_id}")
+
+
+class FeedbacksService:
+    """Service for interacting with feedbacks API."""
+    
+    def __init__(self, client: BaseAPIClient):
+        """
+        Initialize the service.
+        
+        Args:
+            client: Base API client instance
+        """
+        self.client = client
+    
+    async def list_feedbacks(
+        self,
+        search: Optional[str] = None,
+        status: Optional[str] = None,
+        system_id: Optional[str] = None,
+        project_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        List feedbacks with optional filtering and search.
+        
+        Args:
+            search: Search by title or description
+            status: Filter by status
+            system_id: Filter by system ID
+            project_id: Filter by project ID
+            
+        Returns:
+            List of feedback dictionaries
+        """
+        params = {}
+        if search:
+            params["search"] = search
+        if status:
+            params["status"] = status
+        if system_id:
+            params["system_id"] = system_id
+        if project_id:
+            params["project_id"] = project_id
+        
+        data = await self.client.get("/feedbacks", params=params if params else None)
+        
+        # Ensure we return a list
+        if isinstance(data, list):
+            return data
+        elif isinstance(data, dict) and "items" in data:
+            return data["items"]
+        else:
+            return [data]
+    
+    async def get_feedback(self, feedback_id: str) -> Dict[str, Any]:
+        """
+        Get a specific feedback by ID.
+        
+        Args:
+            feedback_id: The ID of the feedback
+            
+        Returns:
+            Feedback dictionary
+        """
+        return await self.client.get(f"/feedbacks/{feedback_id}")
+    
+    async def create_feedback(self, feedback_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a new feedback.
+        
+        Args:
+            feedback_data: Dictionary containing feedback data
+            
+        Returns:
+            Created feedback dictionary
+        """
+        return await self.client.post("/feedbacks", json=feedback_data)
+    
+    async def update_feedback(
+        self,
+        feedback_id: str,
+        update_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Update a feedback.
+        
+        Args:
+            feedback_id: The ID of the feedback
+            update_data: Dictionary containing fields to update
+            
+        Returns:
+            Updated feedback dictionary
+        """
+        return await self.client.patch(f"/feedbacks/{feedback_id}", json=update_data)
+    
+    async def delete_feedback(self, feedback_id: str) -> Dict[str, Any]:
+        """
+        Delete a feedback.
+        
+        Args:
+            feedback_id: The ID of the feedback
+            
+        Returns:
+            Empty dictionary (204 No Content response)
+        """
+        return await self.client.delete(f"/feedbacks/{feedback_id}")
+
+
+class ProjectsService:
+    """Service for interacting with projects API."""
+    
+    def __init__(self, client: BaseAPIClient):
+        """
+        Initialize the service.
+        
+        Args:
+            client: Base API client instance
+        """
+        self.client = client
+    
+    async def list_projects(
+        self,
+        search: Optional[str] = None,
+        status: Optional[str] = None,
+        system_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        List projects with optional filtering and search.
+        
+        Args:
+            search: Search by name or description
+            status: Filter by status
+            system_id: Filter by system ID
+            
+        Returns:
+            List of project dictionaries
+        """
+        params = {}
+        if search:
+            params["search"] = search
+        if status:
+            params["status"] = status
+        if system_id:
+            params["system_id"] = system_id
+        
+        data = await self.client.get("/projects", params=params if params else None)
+        
+        # Ensure we return a list
+        if isinstance(data, list):
+            return data
+        elif isinstance(data, dict) and "items" in data:
+            return data["items"]
+        else:
+            return [data]
+    
+    async def get_project(self, project_id: str) -> Dict[str, Any]:
+        """
+        Get a specific project by ID.
+        
+        Args:
+            project_id: The ID of the project
+            
+        Returns:
+            Project dictionary
+        """
+        return await self.client.get(f"/projects/{project_id}")
+    
+    async def create_project(self, project_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a new project.
+        
+        Args:
+            project_data: Dictionary containing project data
+            
+        Returns:
+            Created project dictionary
+        """
+        return await self.client.post("/projects", json=project_data)
+    
+    async def update_project(
+        self,
+        project_id: str,
+        update_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Update a project.
+        
+        Args:
+            project_id: The ID of the project
+            update_data: Dictionary containing fields to update
+            
+        Returns:
+            Updated project dictionary
+        """
+        return await self.client.patch(f"/projects/{project_id}", json=update_data)
+    
+    async def delete_project(self, project_id: str) -> Dict[str, Any]:
+        """
+        Delete a project.
+        
+        Args:
+            project_id: The ID of the project
+            
+        Returns:
+            Empty dictionary (204 No Content response)
+        """
+        return await self.client.delete(f"/projects/{project_id}")
+
+
 class APIServiceFactory:
     """Factory for creating API service instances."""
     
@@ -189,11 +492,23 @@ class APIServiceFactory:
             raise RuntimeError("Factory must be used as async context manager")
         return ChangeRequestsService(self._client)
     
-    # Add more service properties here as you add new APIs
-    # Example:
-    # @property
-    # def users(self) -> UsersService:
-    #     """Get the users service."""
-    #     if not self._client:
-    #         raise RuntimeError("Factory must be used as async context manager")
-    #     return UsersService(self._client)
+    @property
+    def systems(self) -> SystemsService:
+        """Get the systems service."""
+        if not self._client:
+            raise RuntimeError("Factory must be used as async context manager")
+        return SystemsService(self._client)
+    
+    @property
+    def feedbacks(self) -> FeedbacksService:
+        """Get the feedbacks service."""
+        if not self._client:
+            raise RuntimeError("Factory must be used as async context manager")
+        return FeedbacksService(self._client)
+    
+    @property
+    def projects(self) -> ProjectsService:
+        """Get the projects service."""
+        if not self._client:
+            raise RuntimeError("Factory must be used as async context manager")
+        return ProjectsService(self._client)

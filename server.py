@@ -277,6 +277,418 @@ async def reject_change_request(change_request_id: str) -> str:
         return f"Error rejecting change request: {str(e)}"
 
 
+# Systems MCP Tools
+
+@mcp.tool()
+async def list_systems(
+    search: Optional[str] = None,
+    status: Optional[str] = None
+) -> str:
+    """List systems with optional filtering by search term or status."""
+    logger.info(f"Listing systems with filters: search={search}, status={status}")
+    try:
+        async with APIServiceFactory() as api_factory:
+            systems = await api_factory.systems.list_systems(
+                search=search.strip() if search else None,
+                status=status.strip() if status else None
+            )
+            logger.info(f"Found {len(systems)} system(s)")
+            return f"Found {len(systems)} system(s): {json.dumps(systems, indent=2)}"
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error listing systems: {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error listing systems: {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception("Unexpected error listing systems")
+        return f"Error listing systems: {str(e)}"
+
+
+@mcp.tool()
+async def get_system(system_id: str) -> str:
+    """Get a specific system by ID."""
+    logger.info(f"Getting system: {system_id}")
+    try:
+        if not system_id or not system_id.strip():
+            logger.warning("Empty system_id provided")
+            return "Error: System ID cannot be empty"
+        
+        async with APIServiceFactory() as api_factory:
+            system = await api_factory.systems.get_system(system_id.strip())
+            logger.info(f"Successfully retrieved system: {system_id}")
+            return json.dumps(system, indent=2)
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error getting system '{system_id}': {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error getting system '{system_id}': {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception(f"Unexpected error getting system '{system_id}'")
+        return f"Error getting system: {str(e)}"
+
+
+@mcp.tool()
+async def create_system(system_data: str) -> str:
+    """Create a new system. Provide system data as JSON string."""
+    logger.info("Creating new system")
+    try:
+        if not system_data or not system_data.strip():
+            logger.warning("Empty system_data provided")
+            return "Error: System data cannot be empty"
+        
+        data = json.loads(system_data.strip())
+        async with APIServiceFactory() as api_factory:
+            system = await api_factory.systems.create_system(data)
+            logger.info(f"System created successfully: {system.get('id', 'unknown')}")
+            return f"System created successfully: {json.dumps(system, indent=2)}"
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON format in system_data: {str(e)}")
+        return f"Invalid JSON format: {str(e)}"
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error creating system: {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error creating system: {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception("Unexpected error creating system")
+        return f"Error creating system: {str(e)}"
+
+
+@mcp.tool()
+async def update_system(system_id: str, update_data: str) -> str:
+    """Update a system. Provide update data as JSON string."""
+    logger.info(f"Updating system: {system_id}")
+    try:
+        if not system_id or not system_id.strip():
+            logger.warning("Empty system_id provided")
+            return "Error: System ID cannot be empty"
+        if not update_data or not update_data.strip():
+            logger.warning("Empty update_data provided")
+            return "Error: Update data cannot be empty"
+        
+        data = json.loads(update_data.strip())
+        async with APIServiceFactory() as api_factory:
+            system = await api_factory.systems.update_system(system_id.strip(), data)
+            logger.info(f"System updated successfully: {system_id}")
+            return f"System updated successfully: {json.dumps(system, indent=2)}"
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON format in update_data: {str(e)}")
+        return f"Invalid JSON format: {str(e)}"
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error updating system '{system_id}': {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error updating system '{system_id}': {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception(f"Unexpected error updating system '{system_id}'")
+        return f"Error updating system: {str(e)}"
+
+
+@mcp.tool()
+async def delete_system(system_id: str) -> str:
+    """Delete a system by ID."""
+    logger.info(f"Deleting system: {system_id}")
+    try:
+        if not system_id or not system_id.strip():
+            logger.warning("Empty system_id provided")
+            return "Error: System ID cannot be empty"
+        
+        async with APIServiceFactory() as api_factory:
+            await api_factory.systems.delete_system(system_id.strip())
+            logger.info(f"System deleted successfully: {system_id}")
+            return f"System {system_id} deleted successfully"
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error deleting system '{system_id}': {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error deleting system '{system_id}': {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception(f"Unexpected error deleting system '{system_id}'")
+        return f"Error deleting system: {str(e)}"
+
+
+# Feedbacks MCP Tools
+
+@mcp.tool()
+async def list_feedbacks(
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    system_id: Optional[str] = None,
+    project_id: Optional[str] = None
+) -> str:
+    """List feedbacks with optional filtering by search term, status, system_id, or project_id."""
+    logger.info(f"Listing feedbacks with filters: search={search}, status={status}, "
+                f"system_id={system_id}, project_id={project_id}")
+    try:
+        async with APIServiceFactory() as api_factory:
+            feedbacks = await api_factory.feedbacks.list_feedbacks(
+                search=search.strip() if search else None,
+                status=status.strip() if status else None,
+                system_id=system_id.strip() if system_id else None,
+                project_id=project_id.strip() if project_id else None
+            )
+            logger.info(f"Found {len(feedbacks)} feedback(s)")
+            return f"Found {len(feedbacks)} feedback(s): {json.dumps(feedbacks, indent=2)}"
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error listing feedbacks: {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error listing feedbacks: {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception("Unexpected error listing feedbacks")
+        return f"Error listing feedbacks: {str(e)}"
+
+
+@mcp.tool()
+async def get_feedback(feedback_id: str) -> str:
+    """Get a specific feedback by ID."""
+    logger.info(f"Getting feedback: {feedback_id}")
+    try:
+        if not feedback_id or not feedback_id.strip():
+            logger.warning("Empty feedback_id provided")
+            return "Error: Feedback ID cannot be empty"
+        
+        async with APIServiceFactory() as api_factory:
+            feedback = await api_factory.feedbacks.get_feedback(feedback_id.strip())
+            logger.info(f"Successfully retrieved feedback: {feedback_id}")
+            return json.dumps(feedback, indent=2)
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error getting feedback '{feedback_id}': {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error getting feedback '{feedback_id}': {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception(f"Unexpected error getting feedback '{feedback_id}'")
+        return f"Error getting feedback: {str(e)}"
+
+
+@mcp.tool()
+async def create_feedback(feedback_data: str) -> str:
+    """Create a new feedback. Provide feedback data as JSON string."""
+    logger.info("Creating new feedback")
+    try:
+        if not feedback_data or not feedback_data.strip():
+            logger.warning("Empty feedback_data provided")
+            return "Error: Feedback data cannot be empty"
+        
+        data = json.loads(feedback_data.strip())
+        async with APIServiceFactory() as api_factory:
+            feedback = await api_factory.feedbacks.create_feedback(data)
+            logger.info(f"Feedback created successfully: {feedback.get('id', 'unknown')}")
+            return f"Feedback created successfully: {json.dumps(feedback, indent=2)}"
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON format in feedback_data: {str(e)}")
+        return f"Invalid JSON format: {str(e)}"
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error creating feedback: {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error creating feedback: {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception("Unexpected error creating feedback")
+        return f"Error creating feedback: {str(e)}"
+
+
+@mcp.tool()
+async def update_feedback(feedback_id: str, update_data: str) -> str:
+    """Update a feedback. Provide update data as JSON string."""
+    logger.info(f"Updating feedback: {feedback_id}")
+    try:
+        if not feedback_id or not feedback_id.strip():
+            logger.warning("Empty feedback_id provided")
+            return "Error: Feedback ID cannot be empty"
+        if not update_data or not update_data.strip():
+            logger.warning("Empty update_data provided")
+            return "Error: Update data cannot be empty"
+        
+        data = json.loads(update_data.strip())
+        async with APIServiceFactory() as api_factory:
+            feedback = await api_factory.feedbacks.update_feedback(feedback_id.strip(), data)
+            logger.info(f"Feedback updated successfully: {feedback_id}")
+            return f"Feedback updated successfully: {json.dumps(feedback, indent=2)}"
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON format in update_data: {str(e)}")
+        return f"Invalid JSON format: {str(e)}"
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error updating feedback '{feedback_id}': {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error updating feedback '{feedback_id}': {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception(f"Unexpected error updating feedback '{feedback_id}'")
+        return f"Error updating feedback: {str(e)}"
+
+
+@mcp.tool()
+async def delete_feedback(feedback_id: str) -> str:
+    """Delete a feedback by ID."""
+    logger.info(f"Deleting feedback: {feedback_id}")
+    try:
+        if not feedback_id or not feedback_id.strip():
+            logger.warning("Empty feedback_id provided")
+            return "Error: Feedback ID cannot be empty"
+        
+        async with APIServiceFactory() as api_factory:
+            await api_factory.feedbacks.delete_feedback(feedback_id.strip())
+            logger.info(f"Feedback deleted successfully: {feedback_id}")
+            return f"Feedback {feedback_id} deleted successfully"
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error deleting feedback '{feedback_id}': {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error deleting feedback '{feedback_id}': {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception(f"Unexpected error deleting feedback '{feedback_id}'")
+        return f"Error deleting feedback: {str(e)}"
+
+
+# Projects MCP Tools
+
+@mcp.tool()
+async def list_projects(
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    system_id: Optional[str] = None
+) -> str:
+    """List projects with optional filtering by search term, status, or system_id."""
+    logger.info(f"Listing projects with filters: search={search}, status={status}, system_id={system_id}")
+    try:
+        async with APIServiceFactory() as api_factory:
+            projects = await api_factory.projects.list_projects(
+                search=search.strip() if search else None,
+                status=status.strip() if status else None,
+                system_id=system_id.strip() if system_id else None
+            )
+            logger.info(f"Found {len(projects)} project(s)")
+            return f"Found {len(projects)} project(s): {json.dumps(projects, indent=2)}"
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error listing projects: {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error listing projects: {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception("Unexpected error listing projects")
+        return f"Error listing projects: {str(e)}"
+
+
+@mcp.tool()
+async def get_project(project_id: str) -> str:
+    """Get a specific project by ID."""
+    logger.info(f"Getting project: {project_id}")
+    try:
+        if not project_id or not project_id.strip():
+            logger.warning("Empty project_id provided")
+            return "Error: Project ID cannot be empty"
+        
+        async with APIServiceFactory() as api_factory:
+            project = await api_factory.projects.get_project(project_id.strip())
+            logger.info(f"Successfully retrieved project: {project_id}")
+            return json.dumps(project, indent=2)
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error getting project '{project_id}': {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error getting project '{project_id}': {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception(f"Unexpected error getting project '{project_id}'")
+        return f"Error getting project: {str(e)}"
+
+
+@mcp.tool()
+async def create_project(project_data: str) -> str:
+    """Create a new project. Provide project data as JSON string."""
+    logger.info("Creating new project")
+    try:
+        if not project_data or not project_data.strip():
+            logger.warning("Empty project_data provided")
+            return "Error: Project data cannot be empty"
+        
+        data = json.loads(project_data.strip())
+        async with APIServiceFactory() as api_factory:
+            project = await api_factory.projects.create_project(data)
+            logger.info(f"Project created successfully: {project.get('id', 'unknown')}")
+            return f"Project created successfully: {json.dumps(project, indent=2)}"
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON format in project_data: {str(e)}")
+        return f"Invalid JSON format: {str(e)}"
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error creating project: {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error creating project: {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception("Unexpected error creating project")
+        return f"Error creating project: {str(e)}"
+
+
+@mcp.tool()
+async def update_project(project_id: str, update_data: str) -> str:
+    """Update a project. Provide update data as JSON string."""
+    logger.info(f"Updating project: {project_id}")
+    try:
+        if not project_id or not project_id.strip():
+            logger.warning("Empty project_id provided")
+            return "Error: Project ID cannot be empty"
+        if not update_data or not update_data.strip():
+            logger.warning("Empty update_data provided")
+            return "Error: Update data cannot be empty"
+        
+        data = json.loads(update_data.strip())
+        async with APIServiceFactory() as api_factory:
+            project = await api_factory.projects.update_project(project_id.strip(), data)
+            logger.info(f"Project updated successfully: {project_id}")
+            return f"Project updated successfully: {json.dumps(project, indent=2)}"
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON format in update_data: {str(e)}")
+        return f"Invalid JSON format: {str(e)}"
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error updating project '{project_id}': {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error updating project '{project_id}': {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception(f"Unexpected error updating project '{project_id}'")
+        return f"Error updating project: {str(e)}"
+
+
+@mcp.tool()
+async def delete_project(project_id: str) -> str:
+    """Delete a project by ID."""
+    logger.info(f"Deleting project: {project_id}")
+    try:
+        if not project_id or not project_id.strip():
+            logger.warning("Empty project_id provided")
+            return "Error: Project ID cannot be empty"
+        
+        async with APIServiceFactory() as api_factory:
+            await api_factory.projects.delete_project(project_id.strip())
+            logger.info(f"Project deleted successfully: {project_id}")
+            return f"Project {project_id} deleted successfully"
+    except httpx.HTTPStatusError as e:
+        logger.error(f"HTTP error deleting project '{project_id}': {e.response.status_code} - {e.response.text}")
+        return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
+    except httpx.RequestError as e:
+        logger.error(f"Request error deleting project '{project_id}': {str(e)}")
+        return f"Request error occurred: {str(e)}"
+    except Exception as e:
+        logger.exception(f"Unexpected error deleting project '{project_id}'")
+        return f"Error deleting project: {str(e)}"
+
+
 @mcp.tool()
 async def health_check() -> str:
     """Check the health status of the MCP server and API connection."""
