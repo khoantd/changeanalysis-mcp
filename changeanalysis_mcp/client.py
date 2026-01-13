@@ -48,8 +48,9 @@ class BaseAPIClient:
                 request_headers["Authorization"] = f"Bearer {self.config.api_key}"
                 logger.debug("Added Authorization header (Bearer)")
             elif auth_method in ("x-api-key", "x_api_key"):
+                # Use exact case "X-API-Key" as required by the API
                 request_headers["X-API-Key"] = self.config.api_key
-                logger.debug("Added X-API-Key header")
+                logger.debug(f"Added X-API-Key header (value length: {len(self.config.api_key)})")
             else:
                 logger.warning(f"Unknown auth_method: {auth_method}, no auth header added")
         else:
