@@ -23,7 +23,6 @@ class ChangeRequestsService:
         priority: Optional[str] = None,
         department: Optional[str] = None,
         assignee_id: Optional[str] = None,
-        search: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         List change requests with optional filtering and search.
@@ -33,7 +32,6 @@ class ChangeRequestsService:
             priority: Filter by priority
             department: Filter by department
             assignee_id: Filter by assignee ID
-            search: Search by key, title, or description
             
         Returns:
             List of change request dictionaries
@@ -47,8 +45,6 @@ class ChangeRequestsService:
             params["department"] = department
         if assignee_id:
             params["assignee_id"] = assignee_id
-        if search:
-            params["search"] = search
         
         data = await self.client.get("/change-requests", params=params if params else None)
         
@@ -172,24 +168,32 @@ class SystemsService:
     
     async def list_systems(
         self,
-        search: Optional[str] = None,
-        status: Optional[str] = None
+        status: Optional[str] = None,
+        criticality: Optional[str] = None,
+        department: Optional[str] = None,
+        owner_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         List systems with optional filtering and search.
         
         Args:
-            search: Search by name or description
             status: Filter by status
+            criticality: Filter by criticality
+            department: Filter by department
+            owner_id: Filter by owner ID
             
         Returns:
             List of system dictionaries
         """
-        params = {}
-        if search:
-            params["search"] = search
+        params: Dict[str, Any] = {}
         if status:
             params["status"] = status
+        if criticality:
+            params["criticality"] = criticality
+        if department:
+            params["department"] = department
+        if owner_id:
+            params["owner_id"] = owner_id
         
         data = await self.client.get("/get-systems", params=params if params else None)
         
@@ -269,32 +273,33 @@ class FeedbacksService:
     
     async def list_feedbacks(
         self,
-        search: Optional[str] = None,
         status: Optional[str] = None,
-        system_id: Optional[str] = None,
-        project_id: Optional[str] = None
+        category: Optional[str] = None,
+        priority: Optional[str] = None,
+        source_system: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         List feedbacks with optional filtering and search.
         
         Args:
-            search: Search by title or description
             status: Filter by status
-            system_id: Filter by system ID
-            project_id: Filter by project ID
+            category: Filter by category
+            priority: Filter by priority
+            source_system: Filter by source system identifier
             
         Returns:
             List of feedback dictionaries
         """
-        params = {}
-        if search:
-            params["search"] = search
+        params: Dict[str, Any] = {}
         if status:
             params["status"] = status
-        if system_id:
-            params["system_id"] = system_id
-        if project_id:
-            params["project_id"] = project_id
+        if category:
+            params["category"] = category
+        if priority:
+            params["priority"] = priority
+        if source_system:
+            # FastAPI uses alias 'sourceSystem' but query param name is 'source_system'
+            params["sourceSystem"] = source_system
         
         data = await self.client.get("/get-feedback", params=params if params else None)
         
@@ -374,28 +379,32 @@ class ProjectsService:
     
     async def list_projects(
         self,
-        search: Optional[str] = None,
         status: Optional[str] = None,
-        system_id: Optional[str] = None
+        priority: Optional[str] = None,
+        department: Optional[str] = None,
+        project_manager_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         List projects with optional filtering and search.
         
         Args:
-            search: Search by name or description
             status: Filter by status
-            system_id: Filter by system ID
+            priority: Filter by priority
+            department: Filter by department
+            project_manager_id: Filter by project manager ID
             
         Returns:
             List of project dictionaries
         """
-        params = {}
-        if search:
-            params["search"] = search
+        params: Dict[str, Any] = {}
         if status:
             params["status"] = status
-        if system_id:
-            params["system_id"] = system_id
+        if priority:
+            params["priority"] = priority
+        if department:
+            params["department"] = department
+        if project_manager_id:
+            params["project_manager_id"] = project_manager_id
         
         data = await self.client.get("/get-projects", params=params if params else None)
         

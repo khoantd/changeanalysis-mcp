@@ -27,7 +27,7 @@ mcp = FastMCP("Change Analysis MCP Server")
 
 @mcp.tool()
 async def analyze_change(change: str) -> str:
-    """Search for a change request using the change-requests API."""
+    """Search for a change request by keyword across existing change requests."""
     logger.info(f"Analyzing change request: {change}")
     try:
         # Basic input validation
@@ -35,16 +35,30 @@ async def analyze_change(change: str) -> str:
             logger.warning("Empty change parameter provided")
             return "Error: Change parameter cannot be empty"
         
+        query = change.strip().lower()
         async with APIServiceFactory() as api_factory:
-            change_requests = await api_factory.change_requests.list_change_requests(search=change.strip())
-            
-            # Format the response
-            if not change_requests:
+            # Fetch all change requests (server-side filtering handled by list_change_requests)
+            change_requests = await api_factory.change_requests.list_change_requests()
+
+            # Apply simple client-side keyword filtering on key, title, and description fields
+            def matches(cr: dict) -> bool:
+                for field in ("key", "title", "description"):
+                    value = cr.get(field)
+                    if isinstance(value, str) and query in value.lower():
+                        return True
+                return False
+
+            filtered = [cr for cr in change_requests if matches(cr)]
+
+            if not filtered:
                 logger.info(f"No change requests found for '{change}'")
                 return f"No change requests found for '{change}'"
             
-            logger.info(f"Found {len(change_requests)} change request(s) for '{change}'")
-            return f"Found {len(change_requests)} change request(s) for '{change}': {json.dumps(change_requests, indent=2)}"
+            logger.info(f"Found {len(filtered)} change request(s) for '{change}'")
+            return (
+                f"Found {len(filtered)} change request(s) for '{change}': "
+                f"{json.dumps(filtered, indent=2)}"
+            )
     except httpx.HTTPStatusError as e:
         logger.error(f"HTTP error searching for change '{change}': {e.response.status_code} - {e.response.text}")
         return f"HTTP error occurred: {e.response.status_code} - {e.response.text}"
@@ -62,7 +76,7 @@ async def list_change_requests(
     priority: Optional[str] = None,
     department: Optional[str] = None,
     assignee_id: Optional[str] = None,
-    search: Optional[str] = None
+    search: Optional[str] = None,
 ) -> str:
     """List change requests with optional filtering by status, priority, department, assignee_id, or search term."""
     logger.info(f"Listing change requests with filters: status={status}, priority={priority}, "
@@ -74,8 +88,21 @@ async def list_change_requests(
                 priority=priority.strip() if priority else None,
                 department=department.strip() if department else None,
                 assignee_id=assignee_id.strip() if assignee_id else None,
-                search=search.strip() if search else None
             )
+
+            # Optional client-side search over key, title, and description
+            if search:
+                query = search.strip().lower()
+
+                def matches(cr: dict) -> bool:
+                    for field in ("key", "title", "description"):
+                        value = cr.get(field)
+                        if isinstance(value, str) and query in value.lower():
+                            return True
+                    return False
+
+                change_requests = [cr for cr in change_requests if matches(cr)]
+
             logger.info(f"Found {len(change_requests)} change request(s)")
             return f"Found {len(change_requests)} change request(s): {json.dumps(change_requests, indent=2)}"
     except httpx.HTTPStatusError as e:
@@ -281,16 +308,23 @@ async def reject_change_request(change_request_id: str) -> str:
 
 @mcp.tool()
 async def list_systems(
-    search: Optional[str] = None,
-    status: Optional[str] = None
+    status: Optional[str] = None,
+    criticality: Optional[str] = None,
+    department: Optional[str] = None,
+    owner_id: Optional[str] = None,
 ) -> str:
-    """List systems with optional filtering by search term or status."""
-    logger.info(f"Listing systems with filters: search={search}, status={status}")
+    """List systems with optional filtering by status, criticality, department, or owner_id."""
+    logger.info(
+        "Listing systems with filters: "
+        f"status={status}, criticality={criticality}, department={department}, owner_id={owner_id}"
+    )
     try:
         async with APIServiceFactory() as api_factory:
             systems = await api_factory.systems.list_systems(
-                search=search.strip() if search else None,
-                status=status.strip() if status else None
+                status=status.strip() if status else None,
+                criticality=criticality.strip() if criticality else None,
+                department=department.strip() if department else None,
+                owner_id=owner_id.strip() if owner_id else None,
             )
             logger.info(f"Found {len(systems)} system(s)")
             return f"Found {len(systems)} system(s): {json.dumps(systems, indent=2)}"
@@ -416,21 +450,23 @@ async def delete_system(system_id: str) -> str:
 
 @mcp.tool()
 async def list_feedbacks(
-    search: Optional[str] = None,
     status: Optional[str] = None,
-    system_id: Optional[str] = None,
-    project_id: Optional[str] = None
+    category: Optional[str] = None,
+    priority: Optional[str] = None,
+    source_system: Optional[str] = None,
 ) -> str:
-    """List feedbacks with optional filtering by search term, status, system_id, or project_id."""
-    logger.info(f"Listing feedbacks with filters: search={search}, status={status}, "
-                f"system_id={system_id}, project_id={project_id}")
+    """List feedbacks with optional filtering by status, category, priority, or source_system."""
+    logger.info(
+        "Listing feedbacks with filters: "
+        f"status={status}, category={category}, priority={priority}, source_system={source_system}"
+    )
     try:
         async with APIServiceFactory() as api_factory:
             feedbacks = await api_factory.feedbacks.list_feedbacks(
-                search=search.strip() if search else None,
                 status=status.strip() if status else None,
-                system_id=system_id.strip() if system_id else None,
-                project_id=project_id.strip() if project_id else None
+                category=category.strip() if category else None,
+                priority=priority.strip() if priority else None,
+                source_system=source_system.strip() if source_system else None,
             )
             logger.info(f"Found {len(feedbacks)} feedback(s)")
             return f"Found {len(feedbacks)} feedback(s): {json.dumps(feedbacks, indent=2)}"
@@ -556,18 +592,24 @@ async def delete_feedback(feedback_id: str) -> str:
 
 @mcp.tool()
 async def list_projects(
-    search: Optional[str] = None,
     status: Optional[str] = None,
-    system_id: Optional[str] = None
+    priority: Optional[str] = None,
+    department: Optional[str] = None,
+    project_manager_id: Optional[str] = None,
 ) -> str:
-    """List projects with optional filtering by search term, status, or system_id."""
-    logger.info(f"Listing projects with filters: search={search}, status={status}, system_id={system_id}")
+    """List projects with optional filtering by status, priority, department, or project_manager_id."""
+    logger.info(
+        "Listing projects with filters: "
+        f"status={status}, priority={priority}, department={department}, "
+        f"project_manager_id={project_manager_id}"
+    )
     try:
         async with APIServiceFactory() as api_factory:
             projects = await api_factory.projects.list_projects(
-                search=search.strip() if search else None,
                 status=status.strip() if status else None,
-                system_id=system_id.strip() if system_id else None
+                priority=priority.strip() if priority else None,
+                department=department.strip() if department else None,
+                project_manager_id=project_manager_id.strip() if project_manager_id else None,
             )
             logger.info(f"Found {len(projects)} project(s)")
             return f"Found {len(projects)} project(s): {json.dumps(projects, indent=2)}"
