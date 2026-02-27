@@ -125,7 +125,10 @@ fastmcp run server.py:mcp --transport http --port 8000
 
 ## Available Tools
 
-The MCP server provides the following tools:
+The MCP server provides the following tools for agents and other clients. All tools
+return human-readable strings, often with a pretty-printed JSON payload included
+for structured consumption by agents. See `[AGENT_TOOLS.md](AGENT_TOOLS.md)` for a
+complete, agent-focused reference.
 
 - `analyze_change` - Search for change requests by keyword
 - `list_change_requests` - List change requests with optional filters (status, priority, department, assignee_id, search)
@@ -137,6 +140,29 @@ The MCP server provides the following tools:
 - `approve_change_request` - Approve a change request
 - `reject_change_request` - Reject a change request
 - `health_check` - Check server and API connectivity health
+
+Additional domains exposed via MCP tools:
+
+- **Systems**
+  - `list_systems` - List systems with optional filters (status, criticality, department, owner_id)
+  - `get_system` - Get a specific system by ID
+  - `create_system` - Create a new system
+  - `update_system` - Update an existing system
+  - `delete_system` - Delete a system by ID
+
+- **Feedbacks**
+  - `list_feedbacks` - List feedback entries with optional filters (status, category, priority, source_system)
+  - `get_feedback` - Get a specific feedback entry by ID
+  - `create_feedback` - Create a new feedback entry
+  - `update_feedback` - Update an existing feedback entry
+  - `delete_feedback` - Delete a feedback entry by ID
+
+- **Projects**
+  - `list_projects` - List projects with optional filters (status, priority, department, project_manager_id)
+  - `get_project` - Get a specific project by ID
+  - `create_project` - Create a new project
+  - `update_project` - Update an existing project
+  - `delete_project` - Delete a project by ID
 
 ## Logging
 

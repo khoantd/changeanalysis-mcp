@@ -27,7 +27,24 @@ mcp = FastMCP("Change Analysis MCP Server")
 
 @mcp.tool()
 async def analyze_change(change: str) -> str:
-    """Search for a change request by keyword across existing change requests."""
+    """Analyze change requests by free-text keyword.
+
+    This tool searches across existing change requests using a simple keyword match against
+    the `key`, `title`, and `description` fields.
+
+    Parameters:
+        change: Required search phrase. Leading/trailing whitespace is trimmed. Must be non-empty.
+
+    Returns:
+        A human-readable string. On success:
+        - If matches are found: "Found <N> change request(s) for '<query>': <JSON array>"
+        - If no matches are found: "No change requests found for '<query>'"
+        On error, returns a string starting with:
+        - "Error: ..." for validation problems
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error searching for change '<query>': <details>"
+    """
     logger.info(f"Analyzing change request: {change}")
     try:
         # Basic input validation
@@ -78,7 +95,28 @@ async def list_change_requests(
     assignee_id: Optional[str] = None,
     search: Optional[str] = None,
 ) -> str:
-    """List change requests with optional filtering by status, priority, department, assignee_id, or search term."""
+    """List change requests with optional filtering and keyword search.
+
+    This is the primary tool for retrieving change requests. It supports server-side
+    filtering by status, priority, department, and assignee, plus an optional client-side
+    keyword search over the `key`, `title`, and `description` fields.
+
+    Parameters:
+        status: Optional status filter (e.g., "open", "in_progress", "closed"). Trimmed if provided.
+        priority: Optional priority filter (e.g., "low", "medium", "high"). Trimmed if provided.
+        department: Optional department/team identifier. Trimmed if provided.
+        assignee_id: Optional owner/assignee identifier. Trimmed if provided.
+        search: Optional free-text search term applied client-side to key/title/description.
+
+    Returns:
+        A human-readable string. On success:
+        - "Found <N> change request(s): <JSON array>"
+        where the JSON payload is a pretty-printed list of change request objects.
+        On error, returns a string starting with:
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error listing change requests: <details>"
+    """
     logger.info(f"Listing change requests with filters: status={status}, priority={priority}, "
                 f"department={department}, assignee_id={assignee_id}, search={search}")
     try:
@@ -118,7 +156,19 @@ async def list_change_requests(
 
 @mcp.tool()
 async def get_change_request(change_request_id: str) -> str:
-    """Get a specific change request by ID."""
+    """Get a specific change request by ID.
+
+    Parameters:
+        change_request_id: Required change request identifier. Leading/trailing whitespace is trimmed.
+
+    Returns:
+        On success: a pretty-printed JSON object representing the change request.
+        On error, returns a string starting with:
+        - "Error: Change request ID cannot be empty"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error getting change request: <details>"
+    """
     logger.info(f"Getting change request: {change_request_id}")
     try:
         if not change_request_id or not change_request_id.strip():
@@ -142,7 +192,23 @@ async def get_change_request(change_request_id: str) -> str:
 
 @mcp.tool()
 async def create_change_request(change_request_data: str) -> str:
-    """Create a new change request. Provide change request data as JSON string."""
+    """Create a new change request.
+
+    Parameters:
+        change_request_data: Required JSON string describing the new change request.
+            The structure must match the Change Analysis API schema for change requests.
+            Leading/trailing whitespace is trimmed before parsing.
+
+    Returns:
+        On success: "Change request created successfully: <JSON object>", where the JSON
+        payload is the created change request.
+        On error, returns a string starting with:
+        - "Error: Change request data cannot be empty"
+        - "Invalid JSON format: <details>"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error creating change request: <details>"
+    """
     logger.info("Creating new change request")
     try:
         if not change_request_data or not change_request_data.strip():
@@ -170,7 +236,24 @@ async def create_change_request(change_request_data: str) -> str:
 
 @mcp.tool()
 async def update_change_request(change_request_id: str, update_data: str) -> str:
-    """Update a change request. Provide update data as JSON string."""
+    """Update an existing change request.
+
+    Parameters:
+        change_request_id: Required change request identifier. Trimmed before use.
+        update_data: Required JSON string containing fields to update. Structure must
+            match the Change Analysis API schema. Trimmed before parsing.
+
+    Returns:
+        On success: "Change request updated successfully: <JSON object>", where the JSON
+        payload is the updated change request.
+        On error, returns a string starting with:
+        - "Error: Change request ID cannot be empty"
+        - "Error: Update data cannot be empty"
+        - "Invalid JSON format: <details>"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error updating change request: <details>"
+    """
     logger.info(f"Updating change request: {change_request_id}")
     try:
         if not change_request_id or not change_request_id.strip():
@@ -203,7 +286,19 @@ async def update_change_request(change_request_id: str, update_data: str) -> str
 
 @mcp.tool()
 async def delete_change_request(change_request_id: str) -> str:
-    """Delete a change request by ID."""
+    """Delete a change request by ID.
+
+    Parameters:
+        change_request_id: Required change request identifier. Trimmed before use.
+
+    Returns:
+        On success: "Change request <id> deleted successfully".
+        On error, returns a string starting with:
+        - "Error: Change request ID cannot be empty"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error deleting change request: <details>"
+    """
     logger.info(f"Deleting change request: {change_request_id}")
     try:
         if not change_request_id or not change_request_id.strip():
@@ -227,7 +322,24 @@ async def delete_change_request(change_request_id: str) -> str:
 
 @mcp.tool()
 async def add_comment_to_change_request(change_request_id: str, comment_data: str) -> str:
-    """Add a comment to a change request. Provide comment data as JSON string."""
+    """Add a comment to a change request.
+
+    Parameters:
+        change_request_id: Required change request identifier. Trimmed before use.
+        comment_data: Required JSON string describing the comment. Structure must match
+            the Change Analysis API schema for comments. Trimmed before parsing.
+
+    Returns:
+        On success: "Comment added successfully: <JSON object>", where the JSON payload
+        is the created comment.
+        On error, returns a string starting with:
+        - "Error: Change request ID cannot be empty"
+        - "Error: Comment data cannot be empty"
+        - "Invalid JSON format: <details>"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error adding comment: <details>"
+    """
     logger.info(f"Adding comment to change request: {change_request_id}")
     try:
         if not change_request_id or not change_request_id.strip():
@@ -258,7 +370,20 @@ async def add_comment_to_change_request(change_request_id: str, comment_data: st
 
 @mcp.tool()
 async def approve_change_request(change_request_id: str) -> str:
-    """Approve a change request by ID."""
+    """Approve a change request by ID.
+
+    Parameters:
+        change_request_id: Required change request identifier. Trimmed before use.
+
+    Returns:
+        On success: "Change request approved successfully: <JSON object>", where the JSON
+        payload is the updated change request.
+        On error, returns a string starting with:
+        - "Error: Change request ID cannot be empty"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error approving change request: <details>"
+    """
     logger.info(f"Approving change request: {change_request_id}")
     try:
         if not change_request_id or not change_request_id.strip():
@@ -282,7 +407,20 @@ async def approve_change_request(change_request_id: str) -> str:
 
 @mcp.tool()
 async def reject_change_request(change_request_id: str) -> str:
-    """Reject a change request by ID."""
+    """Reject a change request by ID.
+
+    Parameters:
+        change_request_id: Required change request identifier. Trimmed before use.
+
+    Returns:
+        On success: "Change request rejected successfully: <JSON object>", where the JSON
+        payload is the updated change request.
+        On error, returns a string starting with:
+        - "Error: Change request ID cannot be empty"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error rejecting change request: <details>"
+    """
     logger.info(f"Rejecting change request: {change_request_id}")
     try:
         if not change_request_id or not change_request_id.strip():
@@ -313,7 +451,22 @@ async def list_systems(
     department: Optional[str] = None,
     owner_id: Optional[str] = None,
 ) -> str:
-    """List systems with optional filtering by status, criticality, department, or owner_id."""
+    """List systems with optional filtering.
+
+    Parameters:
+        status: Optional system status (e.g., "active", "retired"). Trimmed if provided.
+        criticality: Optional criticality level (e.g., "low", "medium", "high"). Trimmed.
+        department: Optional department/team identifier. Trimmed.
+        owner_id: Optional system owner identifier. Trimmed.
+
+    Returns:
+        On success: "Found <N> system(s): <JSON array>", where the JSON payload is a
+        pretty-printed list of system objects.
+        On error, returns a string starting with:
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error listing systems: <details>"
+    """
     logger.info(
         "Listing systems with filters: "
         f"status={status}, criticality={criticality}, department={department}, owner_id={owner_id}"
@@ -341,7 +494,19 @@ async def list_systems(
 
 @mcp.tool()
 async def get_system(system_id: str) -> str:
-    """Get a specific system by ID."""
+    """Get a specific system by ID.
+
+    Parameters:
+        system_id: Required system identifier. Trimmed before use.
+
+    Returns:
+        On success: a pretty-printed JSON object representing the system.
+        On error, returns a string starting with:
+        - "Error: System ID cannot be empty"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error getting system: <details>"
+    """
     logger.info(f"Getting system: {system_id}")
     try:
         if not system_id or not system_id.strip():
@@ -365,7 +530,22 @@ async def get_system(system_id: str) -> str:
 
 @mcp.tool()
 async def create_system(system_data: str) -> str:
-    """Create a new system. Provide system data as JSON string."""
+    """Create a new system.
+
+    Parameters:
+        system_data: Required JSON string describing the new system. Structure must match
+            the Change Analysis API schema for systems. Trimmed before parsing.
+
+    Returns:
+        On success: "System created successfully: <JSON object>", where the JSON payload
+        is the created system.
+        On error, returns a string starting with:
+        - "Error: System data cannot be empty"
+        - "Invalid JSON format: <details>"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error creating system: <details>"
+    """
     logger.info("Creating new system")
     try:
         if not system_data or not system_data.strip():
@@ -393,7 +573,24 @@ async def create_system(system_data: str) -> str:
 
 @mcp.tool()
 async def update_system(system_id: str, update_data: str) -> str:
-    """Update a system. Provide update data as JSON string."""
+    """Update an existing system.
+
+    Parameters:
+        system_id: Required system identifier. Trimmed before use.
+        update_data: Required JSON string containing fields to update. Structure must
+            match the Change Analysis API schema. Trimmed before parsing.
+
+    Returns:
+        On success: "System updated successfully: <JSON object>", where the JSON payload
+        is the updated system.
+        On error, returns a string starting with:
+        - "Error: System ID cannot be empty"
+        - "Error: Update data cannot be empty"
+        - "Invalid JSON format: <details>"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error updating system: <details>"
+    """
     logger.info(f"Updating system: {system_id}")
     try:
         if not system_id or not system_id.strip():
@@ -424,7 +621,19 @@ async def update_system(system_id: str, update_data: str) -> str:
 
 @mcp.tool()
 async def delete_system(system_id: str) -> str:
-    """Delete a system by ID."""
+    """Delete a system by ID.
+
+    Parameters:
+        system_id: Required system identifier. Trimmed before use.
+
+    Returns:
+        On success: "System <id> deleted successfully".
+        On error, returns a string starting with:
+        - "Error: System ID cannot be empty"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error deleting system: <details>"
+    """
     logger.info(f"Deleting system: {system_id}")
     try:
         if not system_id or not system_id.strip():
@@ -455,7 +664,23 @@ async def list_feedbacks(
     priority: Optional[str] = None,
     source_system: Optional[str] = None,
 ) -> str:
-    """List feedbacks with optional filtering by status, category, priority, or source_system."""
+    """List feedbacks with optional filtering.
+
+    Parameters:
+        status: Optional feedback status (e.g., "open", "in_review", "resolved"). Trimmed.
+        category: Optional category label. Trimmed.
+        priority: Optional priority level (e.g., "low", "medium", "high"). Trimmed.
+        source_system: Optional source system identifier. Trimmed; mapped to the
+            appropriate query parameter for the underlying API.
+
+    Returns:
+        On success: "Found <N> feedback(s): <JSON array>", where the JSON payload is a
+        pretty-printed list of feedback objects.
+        On error, returns a string starting with:
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error listing feedbacks: <details>"
+    """
     logger.info(
         "Listing feedbacks with filters: "
         f"status={status}, category={category}, priority={priority}, source_system={source_system}"
@@ -483,7 +708,19 @@ async def list_feedbacks(
 
 @mcp.tool()
 async def get_feedback(feedback_id: str) -> str:
-    """Get a specific feedback by ID."""
+    """Get a specific feedback by ID.
+
+    Parameters:
+        feedback_id: Required feedback identifier. Trimmed before use.
+
+    Returns:
+        On success: a pretty-printed JSON object representing the feedback.
+        On error, returns a string starting with:
+        - "Error: Feedback ID cannot be empty"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error getting feedback: <details>"
+    """
     logger.info(f"Getting feedback: {feedback_id}")
     try:
         if not feedback_id or not feedback_id.strip():
@@ -507,7 +744,22 @@ async def get_feedback(feedback_id: str) -> str:
 
 @mcp.tool()
 async def create_feedback(feedback_data: str) -> str:
-    """Create a new feedback. Provide feedback data as JSON string."""
+    """Create a new feedback.
+
+    Parameters:
+        feedback_data: Required JSON string describing the new feedback. Structure must
+            match the Change Analysis API schema for feedback. Trimmed before parsing.
+
+    Returns:
+        On success: "Feedback created successfully: <JSON object>", where the JSON payload
+        is the created feedback.
+        On error, returns a string starting with:
+        - "Error: Feedback data cannot be empty"
+        - "Invalid JSON format: <details>"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error creating feedback: <details>"
+    """
     logger.info("Creating new feedback")
     try:
         if not feedback_data or not feedback_data.strip():
@@ -535,7 +787,24 @@ async def create_feedback(feedback_data: str) -> str:
 
 @mcp.tool()
 async def update_feedback(feedback_id: str, update_data: str) -> str:
-    """Update a feedback. Provide update data as JSON string."""
+    """Update an existing feedback.
+
+    Parameters:
+        feedback_id: Required feedback identifier. Trimmed before use.
+        update_data: Required JSON string containing fields to update. Structure must
+            match the Change Analysis API schema. Trimmed before parsing.
+
+    Returns:
+        On success: "Feedback updated successfully: <JSON object>", where the JSON payload
+        is the updated feedback.
+        On error, returns a string starting with:
+        - "Error: Feedback ID cannot be empty"
+        - "Error: Update data cannot be empty"
+        - "Invalid JSON format: <details>"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error updating feedback: <details>"
+    """
     logger.info(f"Updating feedback: {feedback_id}")
     try:
         if not feedback_id or not feedback_id.strip():
@@ -566,7 +835,19 @@ async def update_feedback(feedback_id: str, update_data: str) -> str:
 
 @mcp.tool()
 async def delete_feedback(feedback_id: str) -> str:
-    """Delete a feedback by ID."""
+    """Delete a feedback by ID.
+
+    Parameters:
+        feedback_id: Required feedback identifier. Trimmed before use.
+
+    Returns:
+        On success: "Feedback <id> deleted successfully".
+        On error, returns a string starting with:
+        - "Error: Feedback ID cannot be empty"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error deleting feedback: <details>"
+    """
     logger.info(f"Deleting feedback: {feedback_id}")
     try:
         if not feedback_id or not feedback_id.strip():
@@ -597,7 +878,22 @@ async def list_projects(
     department: Optional[str] = None,
     project_manager_id: Optional[str] = None,
 ) -> str:
-    """List projects with optional filtering by status, priority, department, or project_manager_id."""
+    """List projects with optional filtering.
+
+    Parameters:
+        status: Optional project status (e.g., "planned", "active", "completed"). Trimmed.
+        priority: Optional priority level (e.g., "low", "medium", "high"). Trimmed.
+        department: Optional department/team identifier. Trimmed.
+        project_manager_id: Optional project manager identifier. Trimmed.
+
+    Returns:
+        On success: "Found <N> project(s): <JSON array>", where the JSON payload is a
+        pretty-printed list of project objects.
+        On error, returns a string starting with:
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error listing projects: <details>"
+    """
     logger.info(
         "Listing projects with filters: "
         f"status={status}, priority={priority}, department={department}, "
@@ -626,7 +922,19 @@ async def list_projects(
 
 @mcp.tool()
 async def get_project(project_id: str) -> str:
-    """Get a specific project by ID."""
+    """Get a specific project by ID.
+
+    Parameters:
+        project_id: Required project identifier. Trimmed before use.
+
+    Returns:
+        On success: a pretty-printed JSON object representing the project.
+        On error, returns a string starting with:
+        - "Error: Project ID cannot be empty"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error getting project: <details>"
+    """
     logger.info(f"Getting project: {project_id}")
     try:
         if not project_id or not project_id.strip():
@@ -650,7 +958,22 @@ async def get_project(project_id: str) -> str:
 
 @mcp.tool()
 async def create_project(project_data: str) -> str:
-    """Create a new project. Provide project data as JSON string."""
+    """Create a new project.
+
+    Parameters:
+        project_data: Required JSON string describing the new project. Structure must
+            match the Change Analysis API schema for projects. Trimmed before parsing.
+
+    Returns:
+        On success: "Project created successfully: <JSON object>", where the JSON payload
+        is the created project.
+        On error, returns a string starting with:
+        - "Error: Project data cannot be empty"
+        - "Invalid JSON format: <details>"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error creating project: <details>"
+    """
     logger.info("Creating new project")
     try:
         if not project_data or not project_data.strip():
@@ -678,7 +1001,24 @@ async def create_project(project_data: str) -> str:
 
 @mcp.tool()
 async def update_project(project_id: str, update_data: str) -> str:
-    """Update a project. Provide update data as JSON string."""
+    """Update an existing project.
+
+    Parameters:
+        project_id: Required project identifier. Trimmed before use.
+        update_data: Required JSON string containing fields to update. Structure must
+            match the Change Analysis API schema. Trimmed before parsing.
+
+    Returns:
+        On success: "Project updated successfully: <JSON object>", where the JSON payload
+        is the updated project.
+        On error, returns a string starting with:
+        - "Error: Project ID cannot be empty"
+        - "Error: Update data cannot be empty"
+        - "Invalid JSON format: <details>"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error updating project: <details>"
+    """
     logger.info(f"Updating project: {project_id}")
     try:
         if not project_id or not project_id.strip():
@@ -709,7 +1049,19 @@ async def update_project(project_id: str, update_data: str) -> str:
 
 @mcp.tool()
 async def delete_project(project_id: str) -> str:
-    """Delete a project by ID."""
+    """Delete a project by ID.
+
+    Parameters:
+        project_id: Required project identifier. Trimmed before use.
+
+    Returns:
+        On success: "Project <id> deleted successfully".
+        On error, returns a string starting with:
+        - "Error: Project ID cannot be empty"
+        - "HTTP error occurred: <status> - <body>"
+        - "Request error occurred: <reason>"
+        - "Error deleting project: <details>"
+    """
     logger.info(f"Deleting project: {project_id}")
     try:
         if not project_id or not project_id.strip():
@@ -733,7 +1085,22 @@ async def delete_project(project_id: str) -> str:
 
 @mcp.tool()
 async def health_check() -> str:
-    """Check the health status of the MCP server and API connection."""
+    """Check the health status of the MCP server and API connection.
+
+    This tool verifies both local configuration and connectivity to the Change Analysis API.
+
+    Parameters:
+        None.
+
+    Returns:
+        A multi-line human-readable status string that always includes a \"Configuration Status\"
+        section. Typical patterns:
+        - On missing API key: "Health check failed: API key not configured...."
+        - On full success: "Health check passed: Server is operational and API connection is working..."
+        - On HTTP problems: "Health check warning: API returned HTTP <status>..."
+        - On network errors: "Health check failed: Cannot connect to API - <details>..."
+        - On unexpected errors: "Health check failed: <details>..."
+    """
     logger.info("Health check requested")
     
     # Check configuration first
